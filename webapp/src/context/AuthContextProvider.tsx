@@ -33,6 +33,14 @@ interface AuthContextValues {
    * Function to initiate the logout
    */
   logout: () => void;
+  /**
+   * The name of the authenticated user
+   */
+  username: string;
+  /**
+   * Check if the user has the given role
+   */
+  hasRole: (role: string) => boolean;
 }
 
 /**
@@ -41,6 +49,8 @@ interface AuthContextValues {
 const defaultAuthContextValues: AuthContextValues = {
   isAuthenticated: false,
   logout: () => {},
+  username: '',
+  hasRole: (role) => false,
 };
 
 /**
@@ -70,6 +80,10 @@ const AuthContextProvider = (props: AuthContextProviderProps) => {
 
   // Create the local state in which we will keep track if a user is authenticated
   const [isAuthenticated, setAuthenticated] = useState<boolean>(false);
+  const [username, setUsername] = useState<string>('');
+  const hasRole = (role: string) => {
+    return keycloak.hasRealmRole(role);
+  };
 
   const logout = () => {
     keycloak.logout();
@@ -103,8 +117,31 @@ const AuthContextProvider = (props: AuthContextProviderProps) => {
     initializeKeycloak();
   }, []);
 
+  useEffect(() => {
+    /**
+     * Load the profile for of the user from Keycloak
+     */
+    async function loadProfile() {
+      try {
+        const profile = await keycloak.loadUserProfile();
+        if (profile.firstName) {
+          setUsername(profile.firstName);
+        } else if (profile.username) {
+          setUsername(profile.username);
+        }
+      } catch {
+        console.log("error trying to load the user profile");
+      }
+    }
+  
+    // Only load the profile if a user is authenticated
+    if (isAuthenticated) {
+      loadProfile();
+    }
+  }, [isAuthenticated])
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, logout }}>
+    <AuthContext.Provider value={{ hasRole, isAuthenticated, logout, username }}>
       {props.children}
     </AuthContext.Provider>
   );
