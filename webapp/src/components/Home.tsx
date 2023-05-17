@@ -3,7 +3,7 @@ import { AuthContext } from "../context/AuthContextProvider";
 
 const Home = () => {
   const authContext = useContext(AuthContext);
-  console.log('a', authContext)
+
   return (
     <section className="text-gray-600 body-font relative">
       <div className="container px-5 py-24 mx-auto">
